@@ -20,23 +20,36 @@ export function extractObservations(userText: string): ExtractedObservation[] {
     obs.push({ type: "symptom.severe_sob_at_rest", value: true, sourceQuote: "benauwd in rust" });
   }
 
-  
-  if (matchesAny(userText, KEYWORDS.ankleSwelling)) {
+  // Enkelzwelling: expliciet geen zwelling scoort false, anders true
+  if (matchesAny(userText, KEYWORDS.noAnkleSwelling)) {
+    obs.push({ type: "ankle_swelling", value: false, sourceQuote: "geen zwelling" });
+  } else if (matchesAny(userText, KEYWORDS.ankleSwelling)) {
     obs.push({ type: "ankle_swelling", value: true, sourceQuote: "enkels gezwollen" });
   }
 
+  // Gemiste medicatie: probeer het aantal dagen te extraheren
   if (matchesAny(userText, KEYWORDS.missedMeds)) {
-    obs.push({ type: "missed_meds", value: true, sourceQuote: "medicatie gemist/vergeten" });
+    const mDays = userText.match(/(\d+)\s*dag/);
+    const missedDays = mDays ? Number(mDays[1]) : 1;
+    obs.push({ type: "missed_meds", value: missedDays, sourceQuote: userText.slice(0, 80) });
   }
 
-  const mScore = userText.match(/(\d{1,2})\s*\/\s*10/);
-  if (mScore) {
-    const score = Number(mScore[1]);
+  // Benauwdheid: score als getal OF zin als "een 7"
+  const mScoreFraction = userText.match(/(\d{1,2})\s*\/\s*10/);
+  const mScoreWord = userText.match(/(?:een|een\s+)?(\d{1,2})(?:\s*van\s*(?:de\s*)?10)?/);
+  if (mScoreFraction) {
+    const score = Number(mScoreFraction[1]);
     if (!Number.isNaN(score) && score >= 0 && score <= 10) {
-      obs.push({ type: "dyspnea_score", value: score, sourceQuote: mScore[0] });
+      obs.push({ type: "dyspnea_score", value: score, sourceQuote: mScoreFraction[0] });
+    }
+  } else if (mScoreWord) {
+    const score = Number(mScoreWord[1]);
+    if (!Number.isNaN(score) && score >= 0 && score <= 10) {
+      obs.push({ type: "dyspnea_score", value: score, sourceQuote: mScoreWord[0] });
     }
   }
 
+  // Gewicht in kg
   const mKg = userText.match(/(\d+(?:[.,]\d+)?)\s*kg/i);
   if (mKg) {
     const kg = Number(mKg[1].replace(",", "."));
