@@ -63,10 +63,6 @@ def get_patient(naam: str):
     }
 
 
-# ------------------------------------------------------------------
-# Sessie beheer
-# ------------------------------------------------------------------
-
 @app.post("/patients/{naam}/session/start")
 def start_sessie(naam: str):
     """
@@ -121,10 +117,7 @@ def start_sessie(naam: str):
 
 @app.post("/patients/{naam}/session/{session_id}/message")
 def stuur_bericht(naam: str, session_id: str, body: BerichtRequest):
-    """
-    Stuur een bericht naar Ana en ontvang haar antwoord.
-    Als gesprek_klaar True is, moet de frontend /end aanroepen.
-    """
+   
     if session_id not in actieve_sessies:
         raise HTTPException(status_code=404, detail="Sessie niet gevonden")
 
@@ -150,9 +143,7 @@ def stuur_bericht(naam: str, session_id: str, body: BerichtRequest):
 
 @app.post("/patients/{naam}/session/{session_id}/end")
 def beeindig_sessie(naam: str, session_id: str):
-    """
-    Beëindig de sessie: sla op, analyseer symptomen, en geef escalatieresultaat terug.
-    """
+    
     if session_id not in actieve_sessies:
         raise HTTPException(status_code=404, detail="Sessie niet gevonden")
 
