@@ -4,7 +4,9 @@ import whisper
 import torch
 from fastapi import UploadFile
 from fastapi.responses import Response
-from gtts import gTTS
+from elevenlabs.client import ElevenLabs
+
+eleven_client = ElevenLabs(api_key=os.getenv("ELEVEN_API_KEY"))
 
 # Laad Whisper model eenmalig bij opstarten
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -29,17 +31,13 @@ async def speech_to_text(audio_bestand: UploadFile) -> str:
 
 
 def text_to_speech(tekst: str) -> Response:
-    """Zet tekst om naar spraak via Google TTS en geef het terug als audio."""
-    tts = gTTS(text=tekst, lang="nl")
-
-    with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as tmp:
-        tts.save(tmp.name)
-        tmp_pad = tmp.name
-
-    with open(tmp_pad, "rb") as f:
-        audio_bytes = f.read()
-
-    os.unlink(tmp_pad)
+    """Zet tekst om naar spraak via ElevenLabs en geef het terug als audio."""
+    audio_stream = eleven_client.text_to_speech.convert(
+        voice_id=os.getenv("ELEVEN_VOICE_ID"),
+        text=tekst,
+        model_id="eleven_multilingual_v2",
+    )
+    audio_bytes = b"".join(audio_stream)
 
     return Response(
         content=audio_bytes,
